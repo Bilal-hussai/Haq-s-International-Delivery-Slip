@@ -160,6 +160,13 @@
       cursor: not-allowed;
     }
 
+    .field-hint {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
     .footer-note {
       margin-top: 15px;
       color: var(--muted);
@@ -200,7 +207,8 @@
 
         <div>
           <label for="customerNumber">Customer Number *</label>
-          <input id="customerNumber" type="tel" placeholder="03XXXXXXXXX" required />
+          <input id="customerNumber" type="tel" placeholder="03XXXXXXXXX" inputmode="numeric" required />
+          <small class="field-hint">Format: 03XXXXXXXXX</small>
         </div>
 
         <div>
@@ -265,6 +273,7 @@
     const todayDate = document.getElementById("todayDate");
 
     let currentSlipNo = "";
+    const PK_MOBILE_REGEX = /^03\d{9}$/;
 
     todayDate.textContent = new Date().toLocaleDateString();
 
@@ -291,6 +300,11 @@
 
       if (!customerName || !customerNumber || !orderDetails || !address || !deliveryCharges) {
         alert("Please fill all required fields.");
+        return false;
+      }
+
+      if (!PK_MOBILE_REGEX.test(customerNumber)) {
+        alert("Please enter a valid customer number in format 03XXXXXXXXX.");
         return false;
       }
 
@@ -348,9 +362,17 @@
           throw new Error(`Server error (${response.status})`);
         }
 
-        const responseData = await response.json();
+        const rawResponse = await response.text();
+        let responseData;
+
+        try {
+          responseData = JSON.parse(rawResponse);
+        } catch (parseError) {
+          throw new Error("Invalid JSON response from server.");
+        }
+
         if (responseData.status !== "success") {
-          throw new Error("Server did not confirm successful save.");
+          throw new Error(responseData.message || "Server did not confirm successful save.");
         }
 
         const slipNo = resolveSlipNo(responseData);
