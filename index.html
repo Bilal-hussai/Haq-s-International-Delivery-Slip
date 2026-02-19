@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Haq's International Delivery Slip</title>
+  <style>
+    :root {
+      --bg: #f7f7f7;
+      --card-bg: #ffffff;
+      --text: #111111;
+      --muted: #666666;
+      --border: #d9d9d9;
+      --accent: #111111;
+      --accent-hover: #2a2a2a;
+      --disabled: #a6a6a6;
+      --success: #0a7f3f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+      padding: 24px;
+    }
+
+    .receipt-card {
+      width: 100%;
+      max-width: 760px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+      padding: 28px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 22px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: clamp(1.3rem, 2.2vw, 1.8rem);
+      letter-spacing: 0.3px;
+    }
+
+    .header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .slip-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding: 12px;
+      background: #fcfcfc;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    .slip-meta strong {
+      color: var(--success);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.92rem;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 12px;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: #505050;
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .button-group {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #ffffff;
+      transition: transform 0.05s ease, background 0.2s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    button.secondary {
+      background: #f1f1f1;
+      color: #1a1a1a;
+      border: 1px solid var(--border);
+    }
+
+    button.secondary:hover:not(:disabled) {
+      background: #e8e8e8;
+    }
+
+    button:disabled {
+      background: var(--disabled);
+      color: #f4f4f4;
+      cursor: not-allowed;
+    }
+
+    .footer-note {
+      margin-top: 15px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      .receipt-card {
+        padding: 18px;
+      }
+
+      .slip-meta {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="receipt-card" id="slipCard">
+    <header class="header">
+      <h1>Haq's International Home Delivery Service</h1>
+      <p>Delivery Slip Management System</p>
+    </header>
+
+    <section class="slip-meta">
+      <div><strong>Slip No:</strong> <span id="slipNoDisplay">Not generated yet</span></div>
+      <div><strong>Date:</strong> <span id="todayDate"></span></div>
+    </section>
+
+    <form id="deliveryForm" novalidate>
+      <div class="form-grid">
+        <div>
+          <label for="customerName">Customer Name *</label>
+          <input id="customerName" type="text" required />
+        </div>
+
+        <div>
+          <label for="orderDetails">Order Details *</label>
+          <textarea id="orderDetails" required></textarea>
+        </div>
+
+        <div>
+          <label for="address">Address *</label>
+          <textarea id="address" required></textarea>
+        </div>
+
+        <div>
+          <label for="deliveryCharges">Delivery Charges *</label>
+          <input id="deliveryCharges" type="number" min="0" step="0.01" required />
+        </div>
+
+        <div>
+          <label for="deliveryStatus">Delivery Status</label>
+          <select id="deliveryStatus">
+            <option value="Pending" selected>Pending</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="button" id="saveBtn">Save Slip</button>
+        <button type="button" id="whatsappBtn" disabled>Share WhatsApp</button>
+        <button type="button" id="csvBtn" class="secondary" disabled>Export CSV</button>
+        <button type="button" id="printBtn" class="secondary">Print</button>
+        <button type="reset" id="resetBtn" class="secondary">Reset</button>
+      </div>
+    </form>
+
+    <p class="footer-note">After saving, Slip No is fetched from Google Sheet response.</p>
+  </main>
+
+  <script>
+    // ============================
+    // Configuration and selectors
+    // ============================
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw4Yc3LKf_g2JezWqrRQWXXxcBwr1t7vWynijXoLEXzjLn-hIpWt6AEde-uEeGrjhAzvQ/exec";
+    const WHATSAPP_NUMBER = "923135964444";
+
+    const form = document.getElementById("deliveryForm");
+    const saveBtn = document.getElementById("saveBtn");
+    const whatsappBtn = document.getElementById("whatsappBtn");
+    const csvBtn = document.getElementById("csvBtn");
+    const printBtn = document.getElementById("printBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    const customerNameInput = document.getElementById("customerName");
+    const orderDetailsInput = document.getElementById("orderDetails");
+    const addressInput = document.getElementById("address");
+    const deliveryChargesInput = document.getElementById("deliveryCharges");
+    const deliveryStatusInput = document.getElementById("deliveryStatus");
+
+    const slipNoDisplay = document.getElementById("slipNoDisplay");
+    const todayDate = document.getElementById("todayDate");
+
+    let currentSlipNo = "";
+
+    todayDate.textContent = new Date().toLocaleDateString();
+
+    // ============================
+    // Utility helpers
+    // ============================
+    function setApiState(isLoading) {
+      saveBtn.disabled = isLoading;
+      printBtn.disabled = isLoading;
+      resetBtn.disabled = isLoading;
+      saveBtn.textContent = isLoading ? "Saving..." : "Save Slip";
+
+      // Keep these disabled until saved slip is available
+      whatsappBtn.disabled = isLoading || !currentSlipNo;
+      csvBtn.disabled = isLoading || !currentSlipNo;
+    }
+
+    function validateForm() {
+      const customerName = customerNameInput.value.trim();
+      const orderDetails = orderDetailsInput.value.trim();
+      const address = addressInput.value.trim();
+      const deliveryCharges = deliveryChargesInput.value.trim();
+
+      if (!customerName || !orderDetails || !address || !deliveryCharges) {
+        alert("Please fill all required fields.");
+        return false;
+      }
+
+      if (Number(deliveryCharges) < 0 || Number.isNaN(Number(deliveryCharges))) {
+        alert("Please enter a valid non-negative number for delivery charges.");
+        return false;
+      }
+
+      return true;
+    }
+
+    function getFormData() {
+      return {
+        customerName: customerNameInput.value.trim(),
+        orderDetails: orderDetailsInput.value.trim(),
+        address: addressInput.value.trim(),
+        deliveryCharges: Number(deliveryChargesInput.value)
+      };
+    }
+
+    function resolveSlipNo(responseData) {
+      if (!responseData || typeof responseData !== "object") {
+        return "";
+      }
+
+      return (
+        responseData.slipNo ||
+        responseData.slipno ||
+        responseData.slip_number ||
+        responseData.slipNumber ||
+        ""
+      );
+    }
+
+    // ============================
+    // Feature handlers
+    // ============================
+    async function saveSlip() {
+      if (!validateForm()) return;
+
+      setApiState(true);
+
+      try {
+        const payload = getFormData();
+        const response = await fetch(WEB_APP_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server error (${response.status})`);
+        }
+
+        const responseData = await response.json();
+        const slipNo = resolveSlipNo(responseData);
+
+        if (!slipNo) {
+          throw new Error("Slip number not received from server.");
+        }
+
+        currentSlipNo = String(slipNo);
+        slipNoDisplay.textContent = currentSlipNo;
+        whatsappBtn.disabled = false;
+        csvBtn.disabled = false;
+
+        alert(`Slip saved successfully. Slip No: ${currentSlipNo}`);
+      } catch (error) {
+        console.error("Save failed:", error);
+        alert(`Unable to save slip. ${error.message || "Please try again."}`);
+      } finally {
+        setApiState(false);
+      }
+    }
+
+    function shareWhatsApp() {
+      if (!currentSlipNo) {
+        alert("Please save the slip before sharing on WhatsApp.");
+        return;
+      }
+
+      const message = [
+        "Haq's International - Delivery Slip",
+        `Slip No: ${currentSlipNo}`,
+        `Customer: ${customerNameInput.value.trim()}`,
+        `Order: ${orderDetailsInput.value.trim()}`,
+        `Address: ${addressInput.value.trim()}`,
+        `Delivery Charges: ${deliveryChargesInput.value.trim()}`,
+        "Status: Pending"
+      ].join("\n");
+
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, "_blank", "noopener");
+    }
+
+    function exportCsv() {
+      if (!currentSlipNo) {
+        alert("Please save the slip before exporting CSV.");
+        return;
+      }
+
+      const rows = [
+        ["Slip No", "Customer Name", "Order Details", "Address", "Delivery Charges", "Delivery Status"],
+        [
+          currentSlipNo,
+          customerNameInput.value.trim(),
+          orderDetailsInput.value.trim(),
+          addressInput.value.trim(),
+          deliveryChargesInput.value.trim(),
+          deliveryStatusInput.value
+        ]
+      ];
+
+      const csvContent = rows
+        .map((row) =>
+          row
+            .map((cell) => {
+              const value = String(cell).replace(/"/g, '""');
+              return `"${value}"`;
+            })
+            .join(",")
+        )
+        .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const fileUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = `haqs_delivery_${currentSlipNo}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(fileUrl);
+    }
+
+    function handleReset() {
+      currentSlipNo = "";
+      slipNoDisplay.textContent = "Not generated yet";
+      whatsappBtn.disabled = true;
+      csvBtn.disabled = true;
+      deliveryStatusInput.value = "Pending";
+    }
+
+    // ============================
+    // Event bindings
+    // ============================
+    saveBtn.addEventListener("click", saveSlip);
+    whatsappBtn.addEventListener("click", shareWhatsApp);
+    csvBtn.addEventListener("click", exportCsv);
+    printBtn.addEventListener("click", () => window.print());
+    form.addEventListener("reset", handleReset);
+  </script>
+</body>
+</html>
