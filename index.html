@@ -199,6 +199,11 @@
         </div>
 
         <div>
+          <label for="customerNumber">Customer Number *</label>
+          <input id="customerNumber" type="tel" placeholder="03XXXXXXXXX" required />
+        </div>
+
+        <div>
           <label for="orderDetails">Order Details *</label>
           <textarea id="orderDetails" required></textarea>
         </div>
@@ -250,6 +255,7 @@
     const resetBtn = document.getElementById("resetBtn");
 
     const customerNameInput = document.getElementById("customerName");
+    const customerNumberInput = document.getElementById("customerNumber");
     const orderDetailsInput = document.getElementById("orderDetails");
     const addressInput = document.getElementById("address");
     const deliveryChargesInput = document.getElementById("deliveryCharges");
@@ -278,11 +284,12 @@
 
     function validateForm() {
       const customerName = customerNameInput.value.trim();
+      const customerNumber = customerNumberInput.value.trim();
       const orderDetails = orderDetailsInput.value.trim();
       const address = addressInput.value.trim();
       const deliveryCharges = deliveryChargesInput.value.trim();
 
-      if (!customerName || !orderDetails || !address || !deliveryCharges) {
+      if (!customerName || !customerNumber || !orderDetails || !address || !deliveryCharges) {
         alert("Please fill all required fields.");
         return false;
       }
@@ -298,6 +305,7 @@
     function getFormData() {
       return {
         customerName: customerNameInput.value.trim(),
+        customerNumber: customerNumberInput.value.trim(),
         orderDetails: orderDetailsInput.value.trim(),
         address: addressInput.value.trim(),
         deliveryCharges: Number(deliveryChargesInput.value)
@@ -341,6 +349,10 @@
         }
 
         const responseData = await response.json();
+        if (responseData.status && responseData.status !== "success") {
+          throw new Error("Server did not confirm successful save.");
+        }
+
         const slipNo = resolveSlipNo(responseData);
 
         if (!slipNo) {
@@ -370,8 +382,9 @@
       const message = [
         "Haq's International - Delivery Slip",
         `Slip No: ${currentSlipNo}`,
-        `Customer: ${customerNameInput.value.trim()}`,
-        `Order: ${orderDetailsInput.value.trim()}`,
+        `Customer Name: ${customerNameInput.value.trim()}`,
+        `Customer Number: ${customerNumberInput.value.trim()}`,
+        `Order Details: ${orderDetailsInput.value.trim()}`,
         `Address: ${addressInput.value.trim()}`,
         `Delivery Charges: ${deliveryChargesInput.value.trim()}`,
         "Status: Pending"
@@ -388,10 +401,11 @@
       }
 
       const rows = [
-        ["Slip No", "Customer Name", "Order Details", "Address", "Delivery Charges", "Delivery Status"],
+        ["Slip No", "Customer Name", "Customer Number", "Order Details", "Address", "Delivery Charges", "Delivery Status"],
         [
           currentSlipNo,
           customerNameInput.value.trim(),
+          customerNumberInput.value.trim(),
           orderDetailsInput.value.trim(),
           addressInput.value.trim(),
           deliveryChargesInput.value.trim(),
