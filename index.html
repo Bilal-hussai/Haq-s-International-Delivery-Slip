@@ -15,6 +15,7 @@
       --accent-hover: #2a2a2a;
       --disabled: #a6a6a6;
       --success: #0a7f3f;
+      --focus: rgba(0, 0, 0, 0.14);
     }
 
     * { box-sizing: border-box; }
@@ -98,14 +99,26 @@
       color: var(--text);
       background: #fff;
       outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      transition: border-color 0.18s ease, box-shadow 0.22s ease, transform 0.18s ease;
+      will-change: box-shadow, border-color;
+    }
+
+    @keyframes focusPulse {
+      0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.10); }
+      100% { box-shadow: 0 0 0 3px var(--focus); }
     }
 
     input:focus,
     textarea:focus,
     select:focus {
       border-color: #505050;
-      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+      animation: focusPulse 140ms ease-out forwards;
+      transform: translateZ(0);
+    }
+
+    .is-active {
+      border-color: #444;
+      box-shadow: 0 0 0 3px var(--focus);
     }
 
     textarea {
@@ -236,53 +249,58 @@
 
   <script>
     // ============================
-    // Configuration and selectors
+    // Configuration + cached DOM
     // ============================
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw4Yc3LKf_g2JezWqrRQWXXxcBwr1t7vWynijXoLEXzjLn-hIpWt6AEde-uEeGrjhAzvQ/exec";
     const WHATSAPP_NUMBER = "923135964444";
 
-    const form = document.getElementById("deliveryForm");
-    const saveBtn = document.getElementById("saveBtn");
-    const whatsappBtn = document.getElementById("whatsappBtn");
-    const csvBtn = document.getElementById("csvBtn");
-    const printBtn = document.getElementById("printBtn");
-    const resetBtn = document.getElementById("resetBtn");
+    const dom = {
+      form: document.getElementById("deliveryForm"),
+      saveBtn: document.getElementById("saveBtn"),
+      whatsappBtn: document.getElementById("whatsappBtn"),
+      csvBtn: document.getElementById("csvBtn"),
+      printBtn: document.getElementById("printBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      customerName: document.getElementById("customerName"),
+      customerNumber: document.getElementById("customerNumber"),
+      orderDetails: document.getElementById("orderDetails"),
+      address: document.getElementById("address"),
+      deliveryCharges: document.getElementById("deliveryCharges"),
+      deliveryStatus: document.getElementById("deliveryStatus"),
+      slipNoDisplay: document.getElementById("slipNoDisplay"),
+      todayDate: document.getElementById("todayDate")
+    };
 
-    const customerNameInput = document.getElementById("customerName");
-    const customerNumberInput = document.getElementById("customerNumber");
-    const orderDetailsInput = document.getElementById("orderDetails");
-    const addressInput = document.getElementById("address");
-    const deliveryChargesInput = document.getElementById("deliveryCharges");
-    const deliveryStatusInput = document.getElementById("deliveryStatus");
+    // ordered fields used for keyboard workflow (cached once)
+    const keyboardFlow = [
+      dom.customerName,
+      dom.customerNumber,
+      dom.orderDetails,
+      dom.address,
+      dom.deliveryCharges
+    ];
 
-    const slipNoDisplay = document.getElementById("slipNoDisplay");
-    const todayDate = document.getElementById("todayDate");
-
-    // Global slip number from backend response
     let generatedSlipNo = "";
-
-    todayDate.textContent = new Date().toLocaleDateString();
+    dom.todayDate.textContent = new Date().toLocaleDateString();
 
     // ============================
     // Utility helpers
     // ============================
     function setSavingState(isSaving) {
-      saveBtn.disabled = isSaving;
-      saveBtn.textContent = isSaving ? "Saving..." : "Save Slip";
-
-      // prevent conflicting actions while saving
-      printBtn.disabled = isSaving;
-      resetBtn.disabled = isSaving;
-      whatsappBtn.disabled = isSaving || !generatedSlipNo;
-      csvBtn.disabled = isSaving || !generatedSlipNo;
+      dom.saveBtn.disabled = isSaving;
+      dom.saveBtn.textContent = isSaving ? "Saving..." : "Save Slip";
+      dom.printBtn.disabled = isSaving;
+      dom.resetBtn.disabled = isSaving;
+      dom.whatsappBtn.disabled = isSaving || !generatedSlipNo;
+      dom.csvBtn.disabled = isSaving || !generatedSlipNo;
     }
 
     function validateForm() {
-      const customerName = customerNameInput.value.trim();
-      const customerNumber = customerNumberInput.value.trim();
-      const orderDetails = orderDetailsInput.value.trim();
-      const address = addressInput.value.trim();
-      const deliveryCharges = deliveryChargesInput.value.trim();
+      const customerName = dom.customerName.value.trim();
+      const customerNumber = dom.customerNumber.value.trim();
+      const orderDetails = dom.orderDetails.value.trim();
+      const address = dom.address.value.trim();
+      const deliveryCharges = dom.deliveryCharges.value.trim();
 
       if (!customerName || !customerNumber || !orderDetails || !address || !deliveryCharges) {
         alert("Please fill all required fields.");
@@ -299,26 +317,35 @@
 
     function collectPayload() {
       return {
-        customerName: customerNameInput.value.trim(),
-        customerNumber: customerNumberInput.value.trim(),
-        orderDetails: orderDetailsInput.value.trim(),
-        address: addressInput.value.trim(),
-        deliveryCharges: deliveryChargesInput.value.trim()
+        customerName: dom.customerName.value.trim(),
+        customerNumber: dom.customerNumber.value.trim(),
+        orderDetails: dom.orderDetails.value.trim(),
+        address: dom.address.value.trim(),
+        deliveryCharges: dom.deliveryCharges.value.trim()
       };
     }
 
+    function moveFocusToNext(currentElement) {
+      const currentIndex = keyboardFlow.indexOf(currentElement);
+      if (currentIndex === -1) return;
+
+      const nextElement = keyboardFlow[currentIndex + 1];
+      if (nextElement) {
+        nextElement.focus();
+      } else {
+        dom.saveBtn.focus();
+      }
+    }
+
     // ============================
-    // Feature handlers
+    // Main handlers
     // ============================
     async function saveSlip() {
       if (!validateForm()) return;
-
       setSavingState(true);
 
       try {
         const data = collectPayload();
-
-        // Required fetch format: POST + JSON.stringify(data), no custom headers/mode
         const res = await fetch(WEB_APP_URL, {
           method: "POST",
           body: JSON.stringify(data)
@@ -337,9 +364,9 @@
             throw new Error("Slip number not received from server.");
           }
 
-          slipNoDisplay.textContent = generatedSlipNo;
-          whatsappBtn.disabled = false;
-          csvBtn.disabled = false;
+          dom.slipNoDisplay.textContent = generatedSlipNo;
+          dom.whatsappBtn.disabled = false;
+          dom.csvBtn.disabled = false;
           alert(`Slip saved successfully. Slip No: ${generatedSlipNo}`);
         } else {
           throw new Error(response.message || "Unable to save slip.");
@@ -361,16 +388,15 @@
       const message = [
         "Haq's International - Delivery Slip",
         `Slip No: ${generatedSlipNo}`,
-        `Customer Name: ${customerNameInput.value.trim()}`,
-        `Customer Number: ${customerNumberInput.value.trim()}`,
-        `Order Details: ${orderDetailsInput.value.trim()}`,
-        `Address: ${addressInput.value.trim()}`,
-        `Delivery Charges: ${deliveryChargesInput.value.trim()}`,
+        `Customer Name: ${dom.customerName.value.trim()}`,
+        `Customer Number: ${dom.customerNumber.value.trim()}`,
+        `Order Details: ${dom.orderDetails.value.trim()}`,
+        `Address: ${dom.address.value.trim()}`,
+        `Delivery Charges: ${dom.deliveryCharges.value.trim()}`,
         "Status: Pending"
       ].join("\n");
 
-      const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-      window.open(url, "_blank", "noopener");
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
     }
 
     function exportCsv() {
@@ -383,24 +409,17 @@
         ["Slip No", "Customer Name", "Customer Number", "Order Details", "Address", "Delivery Charges", "Delivery Status"],
         [
           generatedSlipNo,
-          customerNameInput.value.trim(),
-          customerNumberInput.value.trim(),
-          orderDetailsInput.value.trim(),
-          addressInput.value.trim(),
-          deliveryChargesInput.value.trim(),
-          deliveryStatusInput.value
+          dom.customerName.value.trim(),
+          dom.customerNumber.value.trim(),
+          dom.orderDetails.value.trim(),
+          dom.address.value.trim(),
+          dom.deliveryCharges.value.trim(),
+          dom.deliveryStatus.value
         ]
       ];
 
       const csvContent = rows
-        .map((row) =>
-          row
-            .map((cell) => {
-              const value = String(cell).replace(/"/g, '""');
-              return `"${value}"`;
-            })
-            .join(",")
-        )
+        .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
         .join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -416,20 +435,56 @@
 
     function handleReset() {
       generatedSlipNo = "";
-      slipNoDisplay.textContent = "Not generated yet";
-      whatsappBtn.disabled = true;
-      csvBtn.disabled = true;
-      deliveryStatusInput.value = "Pending";
+      dom.slipNoDisplay.textContent = "Not generated yet";
+      dom.whatsappBtn.disabled = true;
+      dom.csvBtn.disabled = true;
+      dom.deliveryStatus.value = "Pending";
     }
 
     // ============================
-    // Event bindings
+    // Event delegation + bindings
     // ============================
-    saveBtn.addEventListener("click", saveSlip);
-    whatsappBtn.addEventListener("click", shareWhatsApp);
-    csvBtn.addEventListener("click", exportCsv);
-    printBtn.addEventListener("click", () => window.print());
-    form.addEventListener("reset", handleReset);
+    dom.form.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+
+      const target = event.target;
+      const isFlowField = keyboardFlow.includes(target);
+      if (!isFlowField) return;
+
+      // Shift+Enter in textarea keeps newline behavior
+      if (target.tagName === "TEXTAREA" && event.shiftKey) return;
+
+      event.preventDefault();
+
+      // Enter on delivery charges triggers save
+      if (target === dom.deliveryCharges) {
+        dom.saveBtn.click();
+        return;
+      }
+
+      // Enter on all previous fields moves focus to next field
+      moveFocusToNext(target);
+    });
+
+    dom.form.addEventListener("focusin", (event) => {
+      const t = event.target;
+      if (t.matches("input, textarea, select")) {
+        t.classList.add("is-active");
+      }
+    });
+
+    dom.form.addEventListener("focusout", (event) => {
+      const t = event.target;
+      if (t.matches("input, textarea, select")) {
+        t.classList.remove("is-active");
+      }
+    });
+
+    dom.saveBtn.addEventListener("click", saveSlip);
+    dom.whatsappBtn.addEventListener("click", shareWhatsApp);
+    dom.csvBtn.addEventListener("click", exportCsv);
+    dom.printBtn.addEventListener("click", () => window.print());
+    dom.form.addEventListener("reset", handleReset);
   </script>
 </body>
 </html>
