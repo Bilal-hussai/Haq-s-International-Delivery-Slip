@@ -17,9 +17,7 @@
       --success: #0a7f3f;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -74,9 +72,7 @@
       font-size: 0.95rem;
     }
 
-    .slip-meta strong {
-      color: var(--success);
-    }
+    .slip-meta strong { color: var(--success); }
 
     .form-grid {
       display: grid;
@@ -132,17 +128,12 @@
       font-weight: 600;
       cursor: pointer;
       background: var(--accent);
-      color: #ffffff;
+      color: #fff;
       transition: transform 0.05s ease, background 0.2s ease;
     }
 
-    button:hover:not(:disabled) {
-      background: var(--accent-hover);
-    }
-
-    button:active:not(:disabled) {
-      transform: translateY(1px);
-    }
+    button:hover:not(:disabled) { background: var(--accent-hover); }
+    button:active:not(:disabled) { transform: translateY(1px); }
 
     button.secondary {
       background: #f1f1f1;
@@ -150,9 +141,7 @@
       border: 1px solid var(--border);
     }
 
-    button.secondary:hover:not(:disabled) {
-      background: #e8e8e8;
-    }
+    button.secondary:hover:not(:disabled) { background: #e8e8e8; }
 
     button:disabled {
       background: var(--disabled);
@@ -175,10 +164,7 @@
     }
 
     @media (max-width: 520px) {
-      .receipt-card {
-        padding: 18px;
-      }
-
+      .receipt-card { padding: 18px; }
       .slip-meta {
         flex-direction: column;
         align-items: flex-start;
@@ -252,7 +238,7 @@
     // ============================
     // Configuration and selectors
     // ============================
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwvY9b3utd6yACQ5_Ubez8rf9HrlkqDdBCUYr2HmiDZCRDridrUXd-LeC5-_xleCKBkNA/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw4Yc3LKf_g2JezWqrRQWXXxcBwr1t7vWynijXoLEXzjLn-hIpWt6AEde-uEeGrjhAzvQ/exec";
     const WHATSAPP_NUMBER = "923135964444";
 
     const form = document.getElementById("deliveryForm");
@@ -272,23 +258,23 @@
     const slipNoDisplay = document.getElementById("slipNoDisplay");
     const todayDate = document.getElementById("todayDate");
 
-    let currentSlipNo = "";
-    const PK_MOBILE_REGEX = /^03\d{9}$/;
+    // Global slip number from backend response
+    let generatedSlipNo = "";
 
     todayDate.textContent = new Date().toLocaleDateString();
 
     // ============================
     // Utility helpers
     // ============================
-    function setApiState(isLoading) {
-      saveBtn.disabled = isLoading;
-      printBtn.disabled = isLoading;
-      resetBtn.disabled = isLoading;
-      saveBtn.textContent = isLoading ? "Saving..." : "Save Slip";
+    function setSavingState(isSaving) {
+      saveBtn.disabled = isSaving;
+      saveBtn.textContent = isSaving ? "Saving..." : "Save Slip";
 
-      // Keep these disabled until saved slip is available
-      whatsappBtn.disabled = isLoading || !currentSlipNo;
-      csvBtn.disabled = isLoading || !currentSlipNo;
+      // prevent conflicting actions while saving
+      printBtn.disabled = isSaving;
+      resetBtn.disabled = isSaving;
+      whatsappBtn.disabled = isSaving || !generatedSlipNo;
+      csvBtn.disabled = isSaving || !generatedSlipNo;
     }
 
     function validateForm() {
@@ -303,11 +289,6 @@
         return false;
       }
 
-      if (!PK_MOBILE_REGEX.test(customerNumber)) {
-        alert("Please enter a valid customer number in format 03XXXXXXXXX.");
-        return false;
-      }
-
       if (Number(deliveryCharges) < 0 || Number.isNaN(Number(deliveryCharges))) {
         alert("Please enter a valid non-negative number for delivery charges.");
         return false;
@@ -316,7 +297,7 @@
       return true;
     }
 
-    function getFormData() {
+    function collectPayload() {
       return {
         customerName: customerNameInput.value.trim(),
         customerNumber: customerNumberInput.value.trim(),
@@ -326,84 +307,60 @@
       };
     }
 
-    function resolveSlipNo(responseData) {
-      if (!responseData || typeof responseData !== "object") {
-        return "";
-      }
-
-      return (
-        responseData.slipNo ||
-        responseData.slipno ||
-        responseData.slip_number ||
-        responseData.slipNumber ||
-        ""
-      );
-    }
-
     // ============================
     // Feature handlers
     // ============================
     async function saveSlip() {
       if (!validateForm()) return;
 
-      setApiState(true);
+      setSavingState(true);
 
       try {
-        const payload = getFormData();
-        const response = await fetch(WEB_APP_URL, {
+        const data = collectPayload();
+
+        // Required fetch format: POST + JSON.stringify(data), no custom headers/mode
+        const res = await fetch(WEB_APP_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(data)
         });
 
-        if (!response.ok) {
-          throw new Error(`Server error (${response.status})`);
+        if (!res.ok) {
+          throw new Error(`Server error (${res.status}).`);
         }
 
-        const rawResponse = await response.text();
-        let responseData;
+        const response = await res.json();
 
-        try {
-          responseData = JSON.parse(rawResponse);
-        } catch (parseError) {
-          throw new Error("Invalid JSON response from server.");
+        if (response.status === "success") {
+          generatedSlipNo = String(response.slipNo || "").trim();
+
+          if (!generatedSlipNo) {
+            throw new Error("Slip number not received from server.");
+          }
+
+          slipNoDisplay.textContent = generatedSlipNo;
+          whatsappBtn.disabled = false;
+          csvBtn.disabled = false;
+          alert(`Slip saved successfully. Slip No: ${generatedSlipNo}`);
+        } else {
+          throw new Error(response.message || "Unable to save slip.");
         }
-
-        if (responseData.status !== "success") {
-          throw new Error(responseData.message || "Server did not confirm successful save.");
-        }
-
-        const slipNo = resolveSlipNo(responseData);
-
-        if (!slipNo) {
-          throw new Error("Slip number not received from server.");
-        }
-
-        currentSlipNo = String(slipNo);
-        slipNoDisplay.textContent = currentSlipNo;
-        whatsappBtn.disabled = false;
-        csvBtn.disabled = false;
-
-        alert(`Slip saved successfully. Slip No: ${currentSlipNo}`);
       } catch (error) {
         console.error("Save failed:", error);
         alert(`Unable to save slip. ${error.message || "Please try again."}`);
       } finally {
-        setApiState(false);
+        setSavingState(false);
       }
     }
 
     function shareWhatsApp() {
-      if (!currentSlipNo) {
+      if (!generatedSlipNo) {
         alert("Please save the slip before sharing on WhatsApp.");
         return;
       }
 
       const message = [
         "Haq's International - Delivery Slip",
-        `Slip No: ${currentSlipNo}`,
+        `Slip No: ${generatedSlipNo}`,
         `Customer Name: ${customerNameInput.value.trim()}`,
         `Customer Number: ${customerNumberInput.value.trim()}`,
         `Order Details: ${orderDetailsInput.value.trim()}`,
@@ -412,12 +369,12 @@
         "Status: Pending"
       ].join("\n");
 
-      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, "_blank", "noopener");
+      const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+      window.open(url, "_blank", "noopener");
     }
 
     function exportCsv() {
-      if (!currentSlipNo) {
+      if (!generatedSlipNo) {
         alert("Please save the slip before exporting CSV.");
         return;
       }
@@ -425,7 +382,7 @@
       const rows = [
         ["Slip No", "Customer Name", "Customer Number", "Order Details", "Address", "Delivery Charges", "Delivery Status"],
         [
-          currentSlipNo,
+          generatedSlipNo,
           customerNameInput.value.trim(),
           customerNumberInput.value.trim(),
           orderDetailsInput.value.trim(),
@@ -450,7 +407,7 @@
       const fileUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = fileUrl;
-      link.download = `haqs_delivery_${currentSlipNo}.csv`;
+      link.download = `haqs_delivery_${generatedSlipNo}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -458,7 +415,7 @@
     }
 
     function handleReset() {
-      currentSlipNo = "";
+      generatedSlipNo = "";
       slipNoDisplay.textContent = "Not generated yet";
       whatsappBtn.disabled = true;
       csvBtn.disabled = true;
