@@ -362,16 +362,26 @@
 
       try {
         const data = collectPayload();
+        console.log("[Delivery Slip] Sending payload:", data);
+
+        // Apps Script-friendly POST (no custom headers)
         const res = await fetch(WEB_APP_URL, {
           method: "POST",
           body: JSON.stringify(data)
         });
 
-        if (!res.ok) {
-          throw new Error(`Server error (${res.status}).`);
+        let response;
+        try {
+          response = await res.json();
+        } catch (jsonError) {
+          throw new Error("Server returned a non-JSON response. Please check Apps Script deployment.");
         }
 
-        const response = await res.json();
+        console.log("[Delivery Slip] API response:", response);
+
+        if (!res.ok) {
+          throw new Error(response?.message || `Server error (${res.status}).`);
+        }
 
         if (response.status === "success") {
           generatedSlipNo = String(response.slipNo || "").trim();
@@ -388,7 +398,7 @@
           throw new Error(response.message || "Unable to save slip.");
         }
       } catch (error) {
-        console.error("Save failed:", error);
+        console.error("[Delivery Slip] Save failed:", error);
         alert(`Unable to save slip. ${error.message || "Please try again."}`);
       } finally {
         setSavingState(false);
