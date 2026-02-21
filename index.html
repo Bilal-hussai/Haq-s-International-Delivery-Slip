@@ -226,6 +226,11 @@
         </div>
 
         <div>
+          <label for="purchasedAmount">Purchased Items Amount *</label>
+          <input id="purchasedAmount" type="number" min="0" step="0.01" required />
+        </div>
+
+        <div>
           <label for="deliveryStatus">Delivery Status</label>
           <select id="deliveryStatus">
             <option value="Pending" selected>Pending</option>
@@ -266,6 +271,7 @@
       orderDetails: document.getElementById("orderDetails"),
       address: document.getElementById("address"),
       deliveryCharges: document.getElementById("deliveryCharges"),
+      purchasedAmount: document.getElementById("purchasedAmount"),
       deliveryStatus: document.getElementById("deliveryStatus"),
       slipNoDisplay: document.getElementById("slipNoDisplay"),
       todayDate: document.getElementById("todayDate")
@@ -277,7 +283,8 @@
       dom.customerNumber,
       dom.orderDetails,
       dom.address,
-      dom.deliveryCharges
+      dom.deliveryCharges,
+      dom.purchasedAmount
     ];
 
     let generatedSlipNo = "";
@@ -301,14 +308,21 @@
       const orderDetails = dom.orderDetails.value.trim();
       const address = dom.address.value.trim();
       const deliveryCharges = dom.deliveryCharges.value.trim();
+      const purchasedAmount = dom.purchasedAmount.value.trim();
+      const deliveryStatus = dom.deliveryStatus.value.trim();
 
-      if (!customerName || !customerNumber || !orderDetails || !address || !deliveryCharges) {
+      if (!customerName || !customerNumber || !orderDetails || !address || !deliveryCharges || !purchasedAmount || !deliveryStatus) {
         alert("Please fill all required fields.");
         return false;
       }
 
       if (Number(deliveryCharges) < 0 || Number.isNaN(Number(deliveryCharges))) {
         alert("Please enter a valid non-negative number for delivery charges.");
+        return false;
+      }
+
+      if (Number(purchasedAmount) < 0 || Number.isNaN(Number(purchasedAmount))) {
+        alert("Please enter a valid non-negative number for purchased items amount.");
         return false;
       }
 
@@ -321,7 +335,9 @@
         customerNumber: dom.customerNumber.value.trim(),
         orderDetails: dom.orderDetails.value.trim(),
         address: dom.address.value.trim(),
-        deliveryCharges: dom.deliveryCharges.value.trim()
+        deliveryCharges: dom.deliveryCharges.value.trim(),
+        purchasedAmount: dom.purchasedAmount.value.trim(),
+        deliveryStatus: dom.deliveryStatus.value
       };
     }
 
@@ -393,7 +409,8 @@
         `Order Details: ${dom.orderDetails.value.trim()}`,
         `Address: ${dom.address.value.trim()}`,
         `Delivery Charges: ${dom.deliveryCharges.value.trim()}`,
-        "Status: Pending"
+        `Purchased Items Amount: ${dom.purchasedAmount.value.trim()}`,
+        `Status: ${dom.deliveryStatus.value}`
       ].join("\n");
 
       window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
@@ -406,7 +423,7 @@
       }
 
       const rows = [
-        ["Slip No", "Customer Name", "Customer Number", "Order Details", "Address", "Delivery Charges", "Delivery Status"],
+        ["Slip No", "Customer Name", "Customer Number", "Order Details", "Address", "Delivery Charges", "Purchased Items Amount", "Delivery Status"],
         [
           generatedSlipNo,
           dom.customerName.value.trim(),
@@ -414,6 +431,7 @@
           dom.orderDetails.value.trim(),
           dom.address.value.trim(),
           dom.deliveryCharges.value.trim(),
+          dom.purchasedAmount.value.trim(),
           dom.deliveryStatus.value
         ]
       ];
@@ -456,8 +474,8 @@
 
       event.preventDefault();
 
-      // Enter on delivery charges triggers save
-      if (target === dom.deliveryCharges) {
+      // Enter on purchased amount triggers save
+      if (target === dom.purchasedAmount) {
         dom.saveBtn.click();
         return;
       }
