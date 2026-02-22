@@ -256,7 +256,7 @@
     // ============================
     // Configuration + cached DOM
     // ============================
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxIKj2zXpMQ_bC0ZuXTL-aXl-j6He98Chjwne-cFYm3_OhZuVHfojEeyYcYVxakPkK4Jg/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxAUEi-f8q6vDDFYa3hgLUTIV6LyW-XjLl1h-lkhQPIB1a4S37cDY4jz1BVtkOQfnUj/exec";
     const WHATSAPP_NUMBER = "923135964444";
 
     const dom = {
@@ -336,7 +336,7 @@
         address: dom.address.value.trim(),
         deliveryCharges: Number(dom.deliveryCharges.value),
         purchasedAmount: Number(dom.purchasedAmount.value),
-        deliveryStatus: "Pending"
+        deliveryStatus: dom.deliveryStatus.value
       };
     }
 
@@ -406,7 +406,7 @@
           dom.slipNoDisplay.textContent = generatedSlipNo;
           dom.whatsappBtn.disabled = false;
           dom.csvBtn.disabled = false;
-          alert(`Slip saved successfully. Slip No: ${generatedSlipNo}`);
+          alert("Saved Successfully");
         } else {
           const backendError = response?.message || "Unable to save slip.";
           console.error("[Delivery Slip] Backend rejected request:", backendError, response);
