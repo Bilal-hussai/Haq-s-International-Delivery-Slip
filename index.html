@@ -355,69 +355,39 @@
     // ============================
     // Main handlers
     // ============================
-    async function saveSlip() {
+    function saveSlip() {
       if (!validateForm()) return;
       setSavingState(true);
 
-      try {
-        const data = collectPayload();
-        console.log("[Delivery Slip] Request config:", {
-          url: WEB_APP_URL,
-          method: "POST",
-          payload: data
-        });
+      const data = collectPayload();
+      console.log("[Delivery Slip] Request payload:", data);
 
-        // Apps Script-friendly POST (no custom headers)
-        const res = await fetch(WEB_APP_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(data)
-        });
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify(data),
+        redirect: "follow"
+      })
+        .then((response) => response.json())
+        .then((result) => {
+          console.log("[Delivery Slip] Full API response:", result);
 
-        console.log("[Delivery Slip] HTTP status:", res.status, res.statusText);
-
-        const resClone = res.clone();
-        let response;
-        try {
-          response = await res.json();
-        } catch (jsonError) {
-          const rawResponse = await resClone.text();
-          console.error("[Delivery Slip] Non-JSON response body:", rawResponse);
-          throw new Error("Server returned a non-JSON response. Please check Apps Script deployment.");
-        }
-
-        console.log("[Delivery Slip] Full API response:", response);
-
-        if (!res.ok) {
-          const backendError = response?.message || `Server error (${res.status}).`;
-          console.error("[Delivery Slip] Backend HTTP error:", backendError);
-          throw new Error(backendError);
-        }
-
-        if (response.status === "success") {
-          generatedSlipNo = String(response.slipNo || "").trim();
-
-          if (!generatedSlipNo) {
-            throw new Error("Slip number not received from server.");
+          if (result.status === "success") {
+            generatedSlipNo = String(result.slipNo || "").trim();
+            dom.slipNoDisplay.textContent = generatedSlipNo || "Not received";
+            dom.whatsappBtn.disabled = !generatedSlipNo;
+            dom.csvBtn.disabled = !generatedSlipNo;
+            alert("Saved Successfully");
+          } else {
+            alert(result.message || "Error saving slip");
           }
-
-          dom.slipNoDisplay.textContent = generatedSlipNo;
-          dom.whatsappBtn.disabled = false;
-          dom.csvBtn.disabled = false;
-          alert("Saved Successfully");
-        } else {
-          const backendError = response?.message || "Unable to save slip.";
-          console.error("[Delivery Slip] Backend rejected request:", backendError, response);
-          throw new Error(backendError);
-        }
-      } catch (error) {
-        console.error("[Delivery Slip] Save failed:", error);
-        alert(`Unable to save slip. ${error.message || "Please try again."}`);
-      } finally {
-        setSavingState(false);
-      }
+        })
+        .catch((error) => {
+          console.error("Network error:", error);
+          alert("Connection failed. Check deployment settings.");
+        })
+        .finally(() => {
+          setSavingState(false);
+        });
     }
 
     function shareWhatsApp() {
