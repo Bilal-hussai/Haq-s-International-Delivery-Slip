@@ -256,7 +256,7 @@
     // ============================
     // Configuration + cached DOM
     // ============================
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxB7oasXl3wgDeJG_KEAZwOAL5rfMcLFKl45VCOzG4fmbzLuGvKZUmIJo7G2l6QvHiW/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz97knW8g6D9QoJLAn_7gewR6sSyM3TbJS-Gtp4iOwLNj9z6cZXtqVIxqNLL4VuuWaQFw/exec";
     const WHATSAPP_NUMBER = "923135964444";
 
     const dom = {
@@ -362,13 +362,19 @@
 
       try {
         const data = collectPayload();
-        console.log("[Delivery Slip] Sending payload:", data);
+        console.log("[Delivery Slip] Request config:", {
+          url: WEB_APP_URL,
+          method: "POST",
+          payload: data
+        });
 
         // Apps Script-friendly POST (no custom headers)
         const res = await fetch(WEB_APP_URL, {
           method: "POST",
           body: JSON.stringify(data)
         });
+
+        console.log("[Delivery Slip] HTTP status:", res.status, res.statusText);
 
         const resClone = res.clone();
         let response;
@@ -380,10 +386,12 @@
           throw new Error("Server returned a non-JSON response. Please check Apps Script deployment.");
         }
 
-        console.log("[Delivery Slip] API response:", response);
+        console.log("[Delivery Slip] Full API response:", response);
 
         if (!res.ok) {
-          throw new Error(response?.message || `Server error (${res.status}).`);
+          const backendError = response?.message || `Server error (${res.status}).`;
+          console.error("[Delivery Slip] Backend HTTP error:", backendError);
+          throw new Error(backendError);
         }
 
         if (response.status === "success") {
@@ -398,7 +406,9 @@
           dom.csvBtn.disabled = false;
           alert(`Slip saved successfully. Slip No: ${generatedSlipNo}`);
         } else {
-          throw new Error(response.message || "Unable to save slip.");
+          const backendError = response?.message || "Unable to save slip.";
+          console.error("[Delivery Slip] Backend rejected request:", backendError, response);
+          throw new Error(backendError);
         }
       } catch (error) {
         console.error("[Delivery Slip] Save failed:", error);
