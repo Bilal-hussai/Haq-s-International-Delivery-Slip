@@ -256,7 +256,7 @@
     // ============================
     // Configuration + cached DOM
     // ============================
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz97knW8g6D9QoJLAn_7gewR6sSyM3TbJS-Gtp4iOwLNj9z6cZXtqVIxqNLL4VuuWaQFw/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxB7oasXl3wgDeJG_KEAZwOAL5rfMcLFKl45VCOzG4fmbzLuGvKZUmIJo7G2l6QvHiW/exec";
     const WHATSAPP_NUMBER = "923135964444";
 
     const dom = {
@@ -332,11 +332,10 @@
     function collectPayload() {
       return {
         customerName: dom.customerName.value.trim(),
-        customerNumber: dom.customerNumber.value.trim(),
-        orderDetails: dom.orderDetails.value.trim(),
+        customerPhone: dom.customerNumber.value.trim(),
         address: dom.address.value.trim(),
-        deliveryCharges: dom.deliveryCharges.value.trim(),
-        purchasedAmount: dom.purchasedAmount.value.trim(),
+        deliveryCharges: Number(dom.deliveryCharges.value),
+        purchasedAmount: Number(dom.purchasedAmount.value),
         deliveryStatus: dom.deliveryStatus.value
       };
     }
@@ -371,6 +370,9 @@
         // Apps Script-friendly POST (no custom headers)
         const res = await fetch(WEB_APP_URL, {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify(data)
         });
 
