@@ -330,9 +330,12 @@
     }
 
     function collectPayload() {
+      const slipNo = "HS-" + Date.now();
       return {
+        slipNo,
         customerName: dom.customerName.value.trim(),
-        customerPhone: dom.customerNumber.value.trim(),
+        customerNumber: dom.customerNumber.value.trim(),
+        orderDetails: dom.orderDetails.value.trim(),
         address: dom.address.value.trim(),
         deliveryCharges: Number(dom.deliveryCharges.value),
         purchasedAmount: Number(dom.purchasedAmount.value),
@@ -367,23 +370,23 @@
         body: JSON.stringify(data),
         redirect: "follow"
       })
-        .then((response) => response.json())
+        .then((res) => res.json())
         .then((result) => {
           console.log("[Delivery Slip] Full API response:", result);
 
           if (result.status === "success") {
-            generatedSlipNo = String(result.slipNo || "").trim();
-            dom.slipNoDisplay.textContent = generatedSlipNo || "Not received";
-            dom.whatsappBtn.disabled = !generatedSlipNo;
-            dom.csvBtn.disabled = !generatedSlipNo;
-            alert("Saved Successfully");
+            generatedSlipNo = String(result.slipNo || data.slipNo).trim();
+            dom.slipNoDisplay.textContent = generatedSlipNo;
+            dom.whatsappBtn.disabled = false;
+            dom.csvBtn.disabled = false;
+            alert("Slip Saved Successfully");
           } else {
             alert(result.message || "Error saving slip");
           }
         })
         .catch((error) => {
-          console.error("Network error:", error);
-          alert("Connection failed. Check deployment settings.");
+          console.error(error);
+          alert("Network Error");
         })
         .finally(() => {
           setSavingState(false);
