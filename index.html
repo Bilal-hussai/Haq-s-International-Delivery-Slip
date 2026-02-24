@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Haq's International Delivery Slip</title>
+  <style>
+    :root {
+      --bg: #f7f7f7;
+      --card-bg: #ffffff;
+      --text: #111111;
+      --muted: #666666;
+      --border: #d9d9d9;
+      --accent: #111111;
+      --accent-hover: #2a2a2a;
+      --disabled: #a6a6a6;
+      --success: #0a7f3f;
+      --focus: rgba(0, 0, 0, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+      padding: 24px;
+    }
+
+    .receipt-card {
+      width: 100%;
+      max-width: 760px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+      padding: 28px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 22px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: clamp(1.3rem, 2.2vw, 1.8rem);
+      letter-spacing: 0.3px;
+    }
+
+    .header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .slip-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding: 12px;
+      background: #fcfcfc;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    .slip-meta strong { color: var(--success); }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.92rem;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 12px;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.22s ease, transform 0.18s ease;
+      will-change: box-shadow, border-color;
+    }
+
+    @keyframes focusPulse {
+      0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.10); }
+      100% { box-shadow: 0 0 0 3px var(--focus); }
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: #505050;
+      animation: focusPulse 140ms ease-out forwards;
+      transform: translateZ(0);
+    }
+
+    .is-active {
+      border-color: #444;
+      box-shadow: 0 0 0 3px var(--focus);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .button-group {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      transition: transform 0.05s ease, background 0.2s ease;
+    }
+
+    button:hover:not(:disabled) { background: var(--accent-hover); }
+    button:active:not(:disabled) { transform: translateY(1px); }
+
+    button.secondary {
+      background: #f1f1f1;
+      color: #1a1a1a;
+      border: 1px solid var(--border);
+    }
+
+    button.secondary:hover:not(:disabled) { background: #e8e8e8; }
+
+    button:disabled {
+      background: var(--disabled);
+      color: #f4f4f4;
+      cursor: not-allowed;
+    }
+
+    .field-hint {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .footer-note {
+      margin-top: 15px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      .receipt-card { padding: 18px; }
+      .slip-meta {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="receipt-card" id="slipCard">
+    <header class="header">
+      <h1>Haq's International Home Delivery Service</h1>
+      <p>Delivery Slip Management System</p>
+    </header>
+
+    <section class="slip-meta">
+      <div><strong>Slip No:</strong> <span id="slipNoDisplay">Not generated yet</span></div>
+      <div><strong>Date:</strong> <span id="todayDate"></span></div>
+    </section>
+
+    <form id="deliveryForm" novalidate>
+      <div class="form-grid">
+        <div>
+          <label for="customerName">Customer Name *</label>
+          <input id="customerName" type="text" required />
+        </div>
+
+        <div>
+          <label for="customerNumber">Customer Number *</label>
+          <input id="customerNumber" type="tel" placeholder="03XXXXXXXXX" inputmode="numeric" required />
+          <small class="field-hint">Format: 03XXXXXXXXX</small>
+        </div>
+
+        <div>
+          <label for="orderDetails">Order Details *</label>
+          <textarea id="orderDetails" required></textarea>
+        </div>
+
+        <div>
+          <label for="address">Address *</label>
+          <textarea id="address" required></textarea>
+        </div>
+
+        <div>
+          <label for="deliveryCharges">Delivery Charges *</label>
+          <input id="deliveryCharges" type="number" min="0" step="0.01" required />
+        </div>
+
+        <div>
+          <label for="purchasedAmount">Purchased Items Amount *</label>
+          <input id="purchasedAmount" type="number" min="0" step="0.01" required />
+        </div>
+
+        <div>
+          <label for="deliveryStatus">Delivery Status</label>
+          <select id="deliveryStatus">
+            <option value="Pending" selected>Pending</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="button" id="saveBtn">Save Slip</button>
+        <button type="button" id="whatsappBtn" disabled>Share WhatsApp</button>
+        <button type="button" id="csvBtn" class="secondary" disabled>Export CSV</button>
+        <button type="button" id="printBtn" class="secondary">Print</button>
+        <button type="reset" id="resetBtn" class="secondary">Reset</button>
+      </div>
+    </form>
+
+    <p class="footer-note">After saving, Slip No is fetched from Google Sheet response.</p>
+  </main>
+
+  <script>
+    // ============================
+    // Configuration + cached DOM
+    // ============================
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxAUEi-f8q6vDDFYa3hgLUTIV6LyW-XjLl1h-lkhQPIB1a4S37cDY4jz1BVtkOQfnUj/exec";
+    const WHATSAPP_NUMBER = "923135964444";
+
+    const dom = {
+      form: document.getElementById("deliveryForm"),
+      saveBtn: document.getElementById("saveBtn"),
+      whatsappBtn: document.getElementById("whatsappBtn"),
+      csvBtn: document.getElementById("csvBtn"),
+      printBtn: document.getElementById("printBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      customerName: document.getElementById("customerName"),
+      customerNumber: document.getElementById("customerNumber"),
+      orderDetails: document.getElementById("orderDetails"),
+      address: document.getElementById("address"),
+      deliveryCharges: document.getElementById("deliveryCharges"),
+      purchasedAmount: document.getElementById("purchasedAmount"),
+      deliveryStatus: document.getElementById("deliveryStatus"),
+      slipNoDisplay: document.getElementById("slipNoDisplay"),
+      todayDate: document.getElementById("todayDate")
+    };
+
+    // ordered fields used for keyboard workflow (cached once)
+    const keyboardFlow = [
+      dom.customerName,
+      dom.customerNumber,
+      dom.orderDetails,
+      dom.address,
+      dom.deliveryCharges,
+      dom.purchasedAmount
+    ];
+
+    let generatedSlipNo = "";
+    dom.todayDate.textContent = new Date().toLocaleDateString();
+
+    // ============================
+    // Utility helpers
+    // ============================
+    function setSavingState(isSaving) {
+      dom.saveBtn.disabled = isSaving;
+      dom.saveBtn.textContent = isSaving ? "Saving..." : "Save Slip";
+      dom.printBtn.disabled = isSaving;
+      dom.resetBtn.disabled = isSaving;
+      dom.whatsappBtn.disabled = isSaving || !generatedSlipNo;
+      dom.csvBtn.disabled = isSaving || !generatedSlipNo;
+    }
+
+    function validateForm() {
+      const customerName = dom.customerName.value.trim();
+      const customerNumber = dom.customerNumber.value.trim();
+      const orderDetails = dom.orderDetails.value.trim();
+      const address = dom.address.value.trim();
+      const deliveryCharges = dom.deliveryCharges.value.trim();
+      const purchasedAmount = dom.purchasedAmount.value.trim();
+      const deliveryStatus = dom.deliveryStatus.value.trim();
+
+      if (!customerName || !customerNumber || !orderDetails || !address || !deliveryCharges || !purchasedAmount || !deliveryStatus) {
+        alert("Please fill all required fields.");
+        return false;
+      }
+
+      if (Number(deliveryCharges) < 0 || Number.isNaN(Number(deliveryCharges))) {
+        alert("Please enter a valid non-negative number for delivery charges.");
+        return false;
+      }
+
+      if (Number(purchasedAmount) < 0 || Number.isNaN(Number(purchasedAmount))) {
+        alert("Please enter a valid non-negative number for purchased items amount.");
+        return false;
+      }
+
+      return true;
+    }
+
+    function collectPayload() {
+      const slipNo = "HS-" + Date.now();
+      return {
+        slipNo,
+        customerName: dom.customerName.value.trim(),
+        customerNumber: dom.customerNumber.value.trim(),
+        orderDetails: dom.orderDetails.value.trim(),
+        address: dom.address.value.trim(),
+        deliveryCharges: Number(dom.deliveryCharges.value),
+        purchasedAmount: Number(dom.purchasedAmount.value),
+        deliveryStatus: dom.deliveryStatus.value
+      };
+    }
+
+    function moveFocusToNext(currentElement) {
+      const currentIndex = keyboardFlow.indexOf(currentElement);
+      if (currentIndex === -1) return;
+
+      const nextElement = keyboardFlow[currentIndex + 1];
+      if (nextElement) {
+        nextElement.focus();
+      } else {
+        dom.saveBtn.focus();
+      }
+    }
+
+    // ============================
+    // Main handlers
+    // ============================
+    function saveSlip() {
+      if (!validateForm()) return;
+      setSavingState(true);
+
+      const data = collectPayload();
+      console.log("[Delivery Slip] Request payload:", data);
+
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify(data),
+        redirect: "follow"
+      })
+        .then((res) => res.json())
+        .then((result) => {
+          console.log("[Delivery Slip] Full API response:", result);
+
+          if (result.status === "success") {
+            generatedSlipNo = String(result.slipNo || data.slipNo).trim();
+            dom.slipNoDisplay.textContent = generatedSlipNo;
+            dom.whatsappBtn.disabled = false;
+            dom.csvBtn.disabled = false;
+            alert("Slip Saved Successfully");
+          } else {
+            alert(result.message || "Error saving slip");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+          alert("Network Error");
+        })
+        .finally(() => {
+          setSavingState(false);
+        });
+    }
+
+    function shareWhatsApp() {
+      if (!generatedSlipNo) {
+        alert("Please save the slip before sharing on WhatsApp.");
+        return;
+      }
+
+      const message = [
+        "Haq's International - Delivery Slip",
+        `Slip No: ${generatedSlipNo}`,
+        `Customer Name: ${dom.customerName.value.trim()}`,
+        `Customer Number: ${dom.customerNumber.value.trim()}`,
+        `Order Details: ${dom.orderDetails.value.trim()}`,
+        `Address: ${dom.address.value.trim()}`,
+        `Delivery Charges: ${dom.deliveryCharges.value.trim()}`,
+        `Purchased Items Amount: ${dom.purchasedAmount.value.trim()}`,
+        `Status: ${dom.deliveryStatus.value}`
+      ].join("\n");
+
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
+    }
+
+    function exportCsv() {
+      if (!generatedSlipNo) {
+        alert("Please save the slip before exporting CSV.");
+        return;
+      }
+
+      const rows = [
+        ["Slip No", "Customer Name", "Customer Number", "Order Details", "Address", "Delivery Charges", "Purchased Items Amount", "Delivery Status"],
+        [
+          generatedSlipNo,
+          dom.customerName.value.trim(),
+          dom.customerNumber.value.trim(),
+          dom.orderDetails.value.trim(),
+          dom.address.value.trim(),
+          dom.deliveryCharges.value.trim(),
+          dom.purchasedAmount.value.trim(),
+          dom.deliveryStatus.value
+        ]
+      ];
+
+      const csvContent = rows
+        .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const fileUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = `haqs_delivery_${generatedSlipNo}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(fileUrl);
+    }
+
+    function handleReset() {
+      generatedSlipNo = "";
+      dom.slipNoDisplay.textContent = "Not generated yet";
+      dom.whatsappBtn.disabled = true;
+      dom.csvBtn.disabled = true;
+      dom.deliveryStatus.value = "Pending";
+    }
+
+    // ============================
+    // Event delegation + bindings
+    // ============================
+    dom.form.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+
+      const target = event.target;
+      const isFlowField = keyboardFlow.includes(target);
+      if (!isFlowField) return;
+
+      // Shift+Enter in textarea keeps newline behavior
+      if (target.tagName === "TEXTAREA" && event.shiftKey) return;
+
+      event.preventDefault();
+
+      // Enter on purchased amount triggers save
+      if (target === dom.purchasedAmount) {
+        dom.saveBtn.click();
+        return;
+      }
+
+      // Enter on all previous fields moves focus to next field
+      moveFocusToNext(target);
+    });
+
+    dom.form.addEventListener("focusin", (event) => {
+      const t = event.target;
+      if (t.matches("input, textarea, select")) {
+        t.classList.add("is-active");
+      }
+    });
+
+    dom.form.addEventListener("focusout", (event) => {
+      const t = event.target;
+      if (t.matches("input, textarea, select")) {
+        t.classList.remove("is-active");
+      }
+    });
+
+    dom.saveBtn.addEventListener("click", saveSlip);
+    dom.whatsappBtn.addEventListener("click", shareWhatsApp);
+    dom.csvBtn.addEventListener("click", exportCsv);
+    dom.printBtn.addEventListener("click", () => window.print());
+    dom.form.addEventListener("reset", handleReset);
+  </script>
+</body>
+</html>
